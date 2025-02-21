@@ -1,0 +1,4 @@
+# ignored files and folder by git
+
+node_modules/
+.env
