@@ -76,4 +76,32 @@ router.get('/profile', jwtAuthMiddleware, async (req, res) => {
     }
 })
 
+router.put('/profile/password', jwtAuthMiddleware, async (req, res) => {
+    try{
+        const userId = req.user.id;
+        console.log("userId", userId);
+        const {currentPassword, newPassword} = req.body;
+
+        //we have to check current password and newpassword is there in the body or not
+        if(!currentPassword || !newPassword) {
+            return res.status(400).json({error: 'Both passwords are required'})
+        }
+        const user = await User.findById(userId);
+        
+        //checking if the current password we receive in body is same as dtabase password or not
+        if(!user || !(await user.comparePassword(currentPassword))) {
+            return res.status(401).json({error: 'Invalid current password or user does not exist'})
+        }
+
+        user.password = newPassword;
+        await user.save();
+        console.log('password updated');
+        res.status(200).json({message: 'Password updated'});
+    }
+    catch(err) {
+        console.log(err)
+        res.status(401).json({error: 'Internal server error'})
+    }
+})
+
 module.exports = router;
