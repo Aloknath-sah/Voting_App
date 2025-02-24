@@ -128,11 +128,10 @@ router.get('/vote/:candidateId', jwtAuthMiddleware, async (req, res) => {
     }
 })
 
-router.get('/vote/count', async (req, res) => {
+router.get('/vote', async (req, res) => {
     try {
         //find candidate and sort them in desc order by votecount
-        const candidate = await Candidate.find().sort({voteCount: 'desc'})
-
+        const candidate = await Candidate.find().sort({voteCount: 'desc'});
         //map the candidates to only return their name and votecount
         const voteRecord = candidate.map((data) => {
             return {
