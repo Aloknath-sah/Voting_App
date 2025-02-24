@@ -85,4 +85,79 @@ router.delete('/:candidateId', jwtAuthMiddleware, async (req, res) => {
     }
 })
 
+//creating voting feature for voters
+router.get('/vote/:candidateId', jwtAuthMiddleware, async (req, res) => {
+    //no admin can vote
+    //user can vote only once
+    try{
+        const candidateId = req.params.candidateId;
+        const userId = req.user.id;
+
+        const candidate = await Candidate.findById(candidateId);
+        if(!candidate) {
+            return res.status(400).json({message: 'Candidate not found'})
+        }
+
+        const user = await User.findById(userId);
+        if(!user) {
+            return res.status(400).json({message: 'User not found'});
+        }
+
+        if(user.role == 'admin') {
+            return res.status(400).json({message: 'admin are not allowed to vote'})
+        }
+
+        if(user.isVoted) {
+            return res.status(400).json({message: 'already voted'})
+        }
+
+        //updating the candidate document to record vote
+        candidate.votes.push({user: userId})
+        candidate.voteCount++
+        await candidate.save();
+
+        //update the user document
+        user.isVoted = true;
+        await user.save();
+
+        return res.status(200).json({message: 'Vote recorded successfully'})
+    }
+    catch(err) {
+        console.log(err);
+        res.status(400).json({error: 'Internal server error'})
+    }
+})
+
+router.get('/vote/count', async (req, res) => {
+    try {
+        //find candidate and sort them in desc order by votecount
+        const candidate = await Candidate.find().sort({voteCount: 'desc'})
+
+        //map the candidates to only return their name and votecount
+        const voteRecord = candidate.map((data) => {
+            return {
+                party: data.party,
+                count: data.voteCount
+            }
+        })
+        return res.status(200).json(voteRecord);
+    }
+    catch(err) {
+        console.log(err);
+        res.status(400).json({error: 'Internal server error'})
+    }
+})
+
+//get all candidates with only name and party fields
+router.get('/', async (req, res) => {
+    try {
+        const candidates = await Candidate.find({}, 'name party -_id' );
+        res.status(200).json(candidates)
+    }
+    catch(err) {
+        console.log(err);
+        res.status(400).json({error: 'Internal server error'})
+    }
+})
+
 module.exports = router;
